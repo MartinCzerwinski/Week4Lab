@@ -6,7 +6,6 @@
 package servlets;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
@@ -22,7 +21,6 @@ import utility.UserService;
  */
 public class LoginServlet extends HttpServlet
 {
-
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -37,18 +35,26 @@ public class LoginServlet extends HttpServlet
             throws ServletException, IOException
     {
         String loggedout = request.getParameter("loggedout");
-        if(loggedout != null)
+        if(loggedout != null && loggedout.equals("1"))
         {
-            Cookie[] cookies = request.getCookies();
-            for (Cookie cookie : cookies)
-            {
-                cookie.setMaxAge(0); //delete the cookie
-                cookie.setPath("/"); //allow the download application to access it
-                response.addCookie(cookie);
-            }
-
+            request.getSession().removeAttribute("user");
             request.setAttribute("message", "Successfully Logged Out");
         }
+        
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+        if (user != null) {
+            response.sendRedirect("home");
+            return;
+        }
+        
+        Cookie userCookie = getCookie(request.getCookies());
+        
+        if (userCookie != null && !userCookie.getValue().equals("")) {
+            request.setAttribute("username", userCookie.getValue());
+            request.setAttribute("remember", "checked");
+        }
+        
         getServletContext().getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
     }
 
@@ -68,28 +74,28 @@ public class LoginServlet extends HttpServlet
         
         String username = request.getParameter("username");
         String password = request.getParameter("password");
+        
         UserService userService = new UserService();
         User user = new User();
-        Cookie cookie;
         
-        if (username.isEmpty() && password.isEmpty())
+        if (username.isEmpty() || password.isEmpty())
         {
             request.setAttribute("message", "Username and/or Password field cannot be empty");
+            request.setAttribute("username", username);
             getServletContext().getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
         }
         if ((user = userService.login(username, password)) != null)
         {
-            session.setAttribute("sessionID", session.getId());
-            session.setAttribute("user", user.getUsername());
+            session.setAttribute("user", user);
             
-            if (request.getParameter("rememberMe") != null)
+            if (request.getParameterValues("rememberMe") != null)
             {
-                cookie = new Cookie(user.getUsername(), session.getId());
+                Cookie cookie = new Cookie("rememberMeCookie", user.getUsername());
                 response.addCookie(cookie);
             }
             
-            request.setAttribute("usernameMain", username);
-            getServletContext().getRequestDispatcher("/WEB-INF/home.jsp").forward(request, response);
+            response.sendRedirect("Home");
+            return;
         }
         
         request.setAttribute("username", username);
@@ -98,14 +104,16 @@ public class LoginServlet extends HttpServlet
         getServletContext().getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
+    private Cookie getCookie(Cookie[] cookies)
+    {
+        Cookie userCookie = null;
+        for (Cookie c : cookies)
+        {
+            if (c.getName().equals("rememberMeCookie"))
+            {
+                userCookie = c;
+            }
+        }
+        return userCookie;
+    }
 }

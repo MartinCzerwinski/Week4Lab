@@ -5,22 +5,24 @@
  */
 package utility;
 
+import java.io.Serializable;
+
 /**
  *
  * @author 727525
  */
-public class User
+public class User implements Serializable
 {
     private String username;
     private String password;
     
-    public User ()
+    public User()
     {
         this.username = "";
         this.password = "";
     }
     
-    public User (String username, String password)
+    public User(String username, String password)
     {
         this.username = username;
         this.password = password;

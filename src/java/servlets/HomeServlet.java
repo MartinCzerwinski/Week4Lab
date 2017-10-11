@@ -6,12 +6,12 @@
 package servlets;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import utility.User;
 
 /**
  *
@@ -19,8 +19,6 @@ import javax.servlet.http.HttpSession;
  */
 public class HomeServlet extends HttpServlet
 {
-
-
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -32,17 +30,20 @@ public class HomeServlet extends HttpServlet
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws ServletException, IOException
+    {
         HttpSession session = request.getSession();
-        if (session.getId() == session.getAttribute("sessionID"))
+        
+        User user = (User) session.getAttribute("user");
+        
+        if (user == null)
         {
-            session.getAttribute("user");
-            getServletContext().getRequestDispatcher("/WEB-INF/home.jsp").forward(request, response);
+            response.sendRedirect("Login");
+            return;
         }
-        else
-        {
-            getServletContext().getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
-        }
+        
+        request.setAttribute("username", user.getUsername());
+        getServletContext().getRequestDispatcher("/WEB-INF/home.jsp").forward(request, response);
     }
 
     /**
